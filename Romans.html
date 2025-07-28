@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Romans - Stweet</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f5f5; color: #111; margin: 0; padding: 1em; transition: 0.3s; }
+    .dark { background: #121212; color: #f5f5f5; }
+    .roman-card { border: 1px solid #ccc; padding: 1em; margin-bottom: 1em; border-radius: 10px; background: #fff; }
+    .dark .roman-card { background: #1e1e1e; border-color: #444; }
+    .btn { padding: 0.5em 1em; margin: 0.2em; border: none; border-radius: 5px; cursor: pointer; }
+    .edit { background: #4caf50; color: white; }
+    .delete { background: #f44336; color: white; }
+    .toggle-dark { background: #333; color: white; position: fixed; top: 10px; right: 10px; }
+    .pagination { margin-top: 1em; }
+    .page { margin: 0.3em; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <button class="btn toggle-dark" onclick="toggleDarkMode()">Mode Nuit</button>
+  <h1>Mes Romans</h1>
+  <div id="romans-container"></div>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "TA_CLE_API",
+      authDomain: "roman-stweet.firebaseapp.com",
+      projectId: "roman-stweet",
+      storageBucket: "roman-stweet.appspot.com",
+      messagingSenderId: "123456789",
+      appId: "1:123456789:web:exempleid"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const container = document.getElementById("romans-container");
+
+    async function loadRomans() {
+      const snapshot = await db.collection("romans").get();
+      container.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const div = document.createElement("div");
+        div.className = "roman-card";
+        div.innerHTML = `
+          <h2>${data.titre}</h2>
+          <p>${data.description}</p>
+          <button class="btn edit" onclick="editRoman('${doc.id}')">Modifier</button>
+          <button class="btn delete" onclick="deleteRoman('${doc.id}')">Supprimer</button>
+          <button class="btn" onclick="showChapters('${doc.id}')">Chapitres</button>
+          <div id="chapters-${doc.id}" style="margin-top: 10px;"></div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    async function deleteRoman(id) {
+      if (confirm("Supprimer ce roman ?")) {
+        await db.collection("romans").doc(id).delete();
+        loadRomans();
+      }
+    }
+
+    function editRoman(id) {
+      const newTitle = prompt("Nouveau titre :");
+      if (newTitle) {
+        db.collection("romans").doc(id).update({ titre: newTitle });
+        loadRomans();
+      }
+    }
+
+    async function showChapters(romanId) {
+      const div = document.getElementById(`chapters-${romanId}`);
+      const snapshot = await db.collection("romans").doc(romanId).collection("chapitres").get();
+      div.innerHTML = "<h3>Chapitres</h3>";
+      snapshot.forEach(doc => {
+        div.innerHTML += `<p><strong>${doc.data().titre} :</strong> ${doc.data().contenu.slice(0, 100)}...</p>`;
+      });
+    }
+
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark");
+    }
+
+    loadRomans();
+  </script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<h2 id="formTitle">Publier un roman</h2>
+<input type="text" id="titre" placeholder="Titre du roman">
+<textarea id="chapitre" placeholder="Chapitre 1"></textarea>
+<button onclick="publierOuModifierRoman()">Publier</button>
+<button id="ajouterChapitreBtn" style="display:none;" onclick="ajouterChapitre()">Ajouter un chapitre</button>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-app.js";
+  import { getDatabase, ref, set, push, update, get, child } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCuwBD2ma1dJMY5FWp8SRd9PDXnPWtU12k",
+    authDomain: "roman-stweet.firebaseapp.com",
+    projectId: "roman-stweet",
+    storageBucket: "roman-stweet.appspot.com",
+    messagingSenderId: "665571961450",
+    appId: "1:665571961450:web:be91531d5d5b43e844f813"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  let romanId = null; // pour stocker l'ID si on modifie
+
+  function publierOuModifierRoman() {
+    const titre = document.getElementById("titre").value.trim();
+    const chapitre = document.getElementById("chapitre").value.trim();
+
+    if (!titre || !chapitre) {
+      alert("Merci de remplir le titre et le chapitre.");
+      return;
+    }
+
+    if (romanId) {
+      // Modifier roman existant : ici on ajoute un nouveau chapitre à la fin
+      get(ref(db, "romans/" + romanId + "/chapitres")).then(snapshot => {
+        const chapitres = snapshot.val() || [];
+        chapitres.push(chapitre);
+        update(ref(db, "romans/" + romanId), {
+          titre: titre,
+          chapitres: chapitres
+        }).then(() => {
+          alert("Roman modifié, chapitre ajouté !");
+          document.getElementById("chapitre").value = "";
+          afficherBoutonAjouterChapitre();
+        });
+      });
+    } else {
+      // Nouveau roman
+      const romanRef = push(ref(db, "romans"));
+      set(romanRef, {
+        titre: titre,
+        chapitres: [chapitre]
+      }).then(() => {
+        alert("Roman publié avec succès !");
+        document.getElementById("titre").value = "";
+        document.getElementById("chapitre").value = "";
+      });
+    }
+  }
+
+  function ajouterChapitre() {
+    document.getElementById("chapitre").value = "";
+    document.getElementById("chapitre").focus();
+  }
+
+  // Pour précharger un roman en mode édition (par exemple avec un id passé en paramètre)
+  const params = new URLSearchParams(window.location.search);
+  if (params.has("id")) {
+    romanId = params.get("id");
+    get(ref(db, "romans/" + romanId)).then(snapshot => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        document.getElementById("titre").value = data.titre;
+        document.getElementById("formTitle").innerText = "Modifier le roman";
+        document.getElementById("ajouterChapitreBtn").style.display = "inline-block";
+      }
+    });
+  }
+
+  function afficherBoutonAjouterChapitre() {
+    document.getElementById("ajouterChapitreBtn").style.display = "inline-block";
+  }
+</script>

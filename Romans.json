@@ -1,0 +1,7 @@
+{
+  titre: "Nom du roman",
+  chapitres: [
+    { titre: "Chapitre 1", contenu: "Texte du chapitre 1" },
+    { titre: "Chapitre 2", contenu: "Texte du chapitre 2" }
+  ]
+}
